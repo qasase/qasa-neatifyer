@@ -4,10 +4,10 @@ import "./App.css";
 
 import { postRequestWithNativeFetch } from "./fetch";
 
-const MASK_PATH = "/production/predict";
 const MASK_API_KEY = "";
+const IMAGE_FILL_API_KEY = "";
 
-const FILL_API_KEY = "";
+const MASK_PATH = "/production/predict";
 const IMAGE_FILL_PATH =
   "https://ilamfp52bwy5cnjt.us-east-1.aws.endpoints.huggingface.cloud/";
 
@@ -82,7 +82,7 @@ function App() {
     const cleanedImage = await postRequestWithNativeFetch(
       IMAGE_FILL_PATH,
       {
-        Authorization: `Bearer ${FILL_API_KEY}`,
+        Authorization: `Bearer ${IMAGE_FILL_API_KEY}`,
         "content-type": "application/json",
       },
       {
