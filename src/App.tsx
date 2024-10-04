@@ -4,8 +4,8 @@ import "./App.css";
 
 import { postRequestWithNativeFetch } from "./fetch";
 
-const MASK_API_KEY = "";
-const IMAGE_FILL_API_KEY = "";
+const MASK_API_KEY = "rWzflDHa.TG2DGcvxzOHn9rQ8PnlGFS7iBvqibLwc";
+const IMAGE_FILL_API_KEY = "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";
 
 const MASK_PATH = "/production/predict";
 const IMAGE_FILL_PATH =
@@ -19,9 +19,11 @@ interface EncodedFile {
 
 function App() {
   const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [encodedFile, setEncodedFile] = useState<EncodedFile | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [cleanedImage, setCleanedImage] = useState<string | null>(null);
+  const [maskImage, setMaskImage] = useState<string | null>(null);
 
   const loadFile = (file: File): Promise<EncodedFile> =>
     new Promise((res, rej) => {
@@ -51,6 +53,7 @@ function App() {
       setEncodedFile(file);
     };
     loadAndSetFile();
+    setCleanedImage(null);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -64,58 +67,92 @@ function App() {
   };
 
   const removeFurniture = async () => {
-    const values = {
-      workflow_values: {
-        prompt: input,
-        image: {
-          type: "image",
-          data: encodedFile?.encoded.split("base64,")[1],
+    setIsLoading(true);
+    try {
+      const values = {
+        workflow_values: {
+          prompt: input,
+          image: {
+            type: "image",
+            data: encodedFile?.encoded.split("base64,")[1],
+          },
         },
-      },
-    };
-    const mask = await postRequestWithNativeFetch(
-      MASK_PATH,
-      { Authorization: `Api-Key ${MASK_API_KEY}` },
-      values
-    );
+      };
+      const mask = await postRequestWithNativeFetch(
+        MASK_PATH,
+        { Authorization: `Api-Key ${MASK_API_KEY}` },
+        values
+      );
+      setMaskImage(mask.result[0].data);
 
-    const cleanedImage = await postRequestWithNativeFetch(
-      IMAGE_FILL_PATH,
-      {
-        Authorization: `Bearer ${IMAGE_FILL_API_KEY}`,
-        "content-type": "application/json",
-      },
-      {
-        inputs: {
-          prompt:
-            "high quality, floor or carpet and walls, whatever is behind the mask",
-          source_image_url: encodedFile?.encoded.split("base64,")[1],
-          mask_image_url: mask.result[0].data,
+      const cleanedImage = await postRequestWithNativeFetch(
+        IMAGE_FILL_PATH,
+        {
+          Authorization: `Bearer ${IMAGE_FILL_API_KEY}`,
+          "content-type": "application/json",
         },
-      }
-    );
-    setCleanedImage(cleanedImage);
-    console.log({ cleanedImage });
+        {
+          inputs: {
+            prompt:
+              "high quality, empty floors, empty walls, empty ceiling, nothing in the room, nothing on the floor or carpet",
+            negative_prompt:
+              "(furniture, chairs, couch, sofa, bed, people, face masks, objects:1.5), \
+              (octane render, render, drawing, anime, bad photo, bad photography:1.3), \
+              (worst quality, low quality, blurry:1.2), (bad teeth, deformed teeth, deformed lips), \
+              (bad anatomy, bad proportions:1.1), (deformed iris, deformed pupils), (deformed eyes, bad eyes), \
+              (deformed face, ugly face, bad face), (deformed hands, bad hands, fused fingers), morbid, mutilated, mutation, disfigured",
+            source_image_url: encodedFile?.encoded.split("base64,")[1],
+            mask_image_url: mask.result[0].data,
+          },
+        }
+      );
+      setCleanedImage(cleanedImage);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+      setMaskImage(null);
+    }
   };
 
   return (
     <>
-      <div {...getRootProps()} className="dropzone">
-        <input {...getInputProps()} />
-        {previewImage ? (
-          <img src={previewImage} className="image" />
-        ) : isDragActive ? (
-          <p>Drop the file here</p>
-        ) : (
-          <p>Drag and drop an image here, or click to select files</p>
+      <div className={"flex-container"}>
+        <div {...getRootProps()} className="dropzone flex">
+          <input {...getInputProps()} />
+          {previewImage ? (
+            <img src={previewImage} className="image" />
+          ) : isDragActive ? (
+            <p>Drop the file here</p>
+          ) : (
+            <p>Drag and drop an image here, or click to select files</p>
+          )}
+        </div>
+
+        {(isLoading || cleanedImage) && (
+          <div className="flex">
+            <div className="result-image-container">
+              {isLoading && previewImage && (
+                <img src={previewImage} className="image loading" />
+              )}
+              {isLoading && maskImage && (
+                <img
+                  src={`data:image/png;base64,${maskImage}`}
+                  className="image transparent"
+                />
+              )}
+              {cleanedImage && !isLoading && (
+                <img
+                  src={`data:image/png;base64,${cleanedImage}`}
+                  className="image"
+                />
+              )}
+            </div>
+          </div>
         )}
       </div>
 
-      {cleanedImage && (
-        <img src={`data:image/png;base64,${cleanedImage}`} className="image" />
-      )}
-
-      <div className="card">
+      <div className="card centered">
         <label className={"input-wrapper"}>
           What would you like to remove?
           <input type={"text"} value={input} onChange={handleChange}></input>
