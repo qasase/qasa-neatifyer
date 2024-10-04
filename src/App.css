@@ -33,7 +33,6 @@
 }
 .flex {
   flex: 1;
-  max-width: 600px;
 }
 
 .image {
@@ -63,6 +62,7 @@
 .result-image-container {
   position: relative;
   height: 100%;
+  min-height: 300px;
   img {
     position: absolute;
     left: 50%;

@@ -57,6 +57,7 @@ function App() {
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    multiple: false,
     accept: ["image/jpeg", "image/png", "image/gif", "image/*"],
     maxSize: 100000000, // 100 mb
     onDrop,
@@ -100,7 +101,8 @@ function App() {
               (octane render, render, drawing, anime, bad photo, bad photography:1.3), \
               (worst quality, low quality, blurry:1.2), (bad teeth, deformed teeth, deformed lips), \
               (bad anatomy, bad proportions:1.1), (deformed iris, deformed pupils), (deformed eyes, bad eyes), \
-              (deformed face, ugly face, bad face), (deformed hands, bad hands, fused fingers), morbid, mutilated, mutation, disfigured",
+              (deformed face, ugly face, bad face), (deformed hands, bad hands, fused fingers), morbid, mutilated, mutation, disfigured, \
+              (deformed furniture, ugly furniture, bad furniture), (deformed chair, bad chair, fused furniture)",
             source_image_url: encodedFile?.encoded.split("base64,")[1],
             mask_image_url: mask.result[0].data,
           },
